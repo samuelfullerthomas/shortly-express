@@ -25,12 +25,12 @@ app.use(express.static(__dirname + '/public'));
 
 app.get('/', 
 function(req, res) {
-  res.render('index');
+  res.render('index'); //renders template from login.ejs
 });
 
 app.get('/create', 
 function(req, res) {
-  res.render('index');
+  res.render('index'); //renders template from signup.ejs
 });
 
 app.get('/links', 
@@ -74,10 +74,57 @@ function(req, res) {
   });
 });
 
+app.get('/signup', 
+function(req, res) {
+  res.render('signup');
+});
+
+app.post('/signup', 
+function(req, res) {
+  var body = req.body;
+
+
+  new User(body).fetch().then(function(found) {
+    if (found) {
+      res.send(201);
+    } else {
+        var user = new User(body);
+        console.log(user)
+
+        user.save().then(function(newUser) {
+          Users.add(newUser);
+          res.redirect('index');
+        });
+    }
+  });
+});
+
+app.get('/login', 
+function(req, res) {
+  res.render('login');
+});
+
+app.post('/login', 
+function(req, res) {
+  var body = req.body;  
+  new User(body).fetch().then(function(found) {
+    if (found) {
+      console.log("You've logged in!")
+      res.send(201/*session cookie*/);
+    } else {
+      console.log("No such user")
+          res.send(404);
+    }
+  });
+});
 /************************************************************/
 // Write your authentication routes here
 /************************************************************/
-
+/* some code for handling unautheroize posts and gets
+if it is unauthorized, redirect
+if !un then create a new user
+on login, give cookie
+on log out, delete cookie from database
 
 
 /************************************************************/
@@ -108,5 +155,5 @@ app.get('/*', function(req, res) {
   });
 });
 
-console.log('Shortly is listening on 4568');
+console.log('Shortly is listening on 4568 biatch');
 app.listen(4568);
