@@ -3,6 +3,7 @@ var util = require('./lib/utility');
 var partials = require('express-partials');
 var bodyParser = require('body-parser');
 var bcrypt = require('bcrypt-nodejs');
+var session = require('express-session')
 
 
 var db = require('./app/config');
@@ -14,6 +15,7 @@ var Click = require('./app/models/click');
 
 var app = express();
 
+app.use(session({secret: 'jamie is a total fucking boss, and errybody knows it'}))
 app.set('views', __dirname + '/views');
 app.set('view engine', 'ejs');
 app.use(partials());
@@ -23,22 +25,39 @@ app.use(bodyParser.json());
 app.use(bodyParser.urlencoded({ extended: true }));
 app.use(express.static(__dirname + '/public'));
 
+var sess;
 
 app.get('/', 
 function(req, res) {
-  res.render('index'); //renders template from login.ejs
+  if (req.session.loggedIn) { ///////11am
+
+  res.render('index');////////
+
+  } else {//////////
+    res.redirect('/login');////////
+  }////////////
 });
 
 app.get('/create', 
 function(req, res) {
-  res.render('index'); //renders template from signup.ejs
+  if (req.session.loggedIn) { ///////11am
+
+  res.render('index');////////
+
+  } else {//////////
+    res.redirect('/login');////////
+  }////////////
 });
 
 app.get('/links', 
 function(req, res) {
-  Links.reset().fetch().then(function(links) {
+  if (req.session.loggedIn) { ///////11am
+    Links.reset().fetch().then(function(links) {
     res.send(200, links.models);
-  });
+    });
+  } else {//////////
+    res.redirect('/login');////////
+  }////////////
 });
 
 app.post('/links', 
@@ -83,9 +102,6 @@ function(req, res) {
 app.post('/signup', 
 function(req, res) {
   var body = req.body;
-
-  // var uniqueCheck = users.get(body.username);
-
   var user = new User({username : body.username});
   user.fetch().then(function(found) {console.log('found',found)
     if (found) {
@@ -93,11 +109,11 @@ function(req, res) {
 
     } else {
         var user = new User(body);
-        console.log(user)
 
         user.save().then(function(newUser) {
           Users.add(newUser);
-          res.redirect('index');
+          req.session.loggedIn = true;
+          res.redirect('/');
         });
     }
   });
@@ -114,18 +130,24 @@ function(req, res) {
   new User({username : body.username}).fetch().then(function(found) {
     if(found){
       if (bcrypt.compareSync(body.password, found.get('password'))) {
-        console.log("You've logged in!")
-        res.send(201/*session cookie*/);
+        req.session.loggedIn = true;
+        console.log(req.session.cookie)
+        res.redirect('/');
       }
       else {
       console.log("Wrong username/password combination")
-      res.send(404);
+      res.redirect('/login');
       }
     }else {
       console.log("Wrong username/password combination")
-      res.send(404);
+      res.redirect('/login');
     }
   });
+});
+app.get('/logout', 
+  function(req, res){
+    req.session.destroy(function(err){})
+    res.redirect('/login');
 });
 /************************************************************/
 // Write your authentication routes here
