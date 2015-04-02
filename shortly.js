@@ -2,6 +2,7 @@ var express = require('express');
 var util = require('./lib/utility');
 var partials = require('express-partials');
 var bodyParser = require('body-parser');
+var bcrypt = require('bcrypt-nodejs');
 
 
 var db = require('./app/config');
@@ -83,10 +84,13 @@ app.post('/signup',
 function(req, res) {
   var body = req.body;
 
+  // var uniqueCheck = users.get(body.username);
 
-  new User(body).fetch().then(function(found) {
+  var user = new User({username : body.username});
+  user.fetch().then(function(found) {console.log('found',found)
     if (found) {
-      res.send(201);
+      res.send(418);
+
     } else {
         var user = new User(body);
         console.log(user)
@@ -107,13 +111,19 @@ function(req, res) {
 app.post('/login', 
 function(req, res) {
   var body = req.body;  
-  new User(body).fetch().then(function(found) {
-    if (found) {
-      console.log("You've logged in!")
-      res.send(201/*session cookie*/);
-    } else {
-      console.log("No such user")
-          res.send(404);
+  new User({username : body.username}).fetch().then(function(found) {
+    if(found){
+      if (bcrypt.compareSync(body.password, found.get('password'))) {
+        console.log("You've logged in!")
+        res.send(201/*session cookie*/);
+      }
+      else {
+      console.log("Wrong username/password combination")
+      res.send(404);
+      }
+    }else {
+      console.log("Wrong username/password combination")
+      res.send(404);
     }
   });
 });
